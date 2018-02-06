@@ -227,7 +227,7 @@ func (q *query) selectSQL(buffer *bytes.Buffer) {
 	sqlClause(buffer, "WHERE", q._where, "(", ")", " and ")
 	sqlClause(buffer, "GROUP BY", q._groupBy, "", "", ", ")
 	sqlClause(buffer, "HAVING", q._having, "(", ")", " and ")
-	sqlClause(buffer, "orDER BY", q._orderBy, "", "", ", ")
+	sqlClause(buffer, "ORDER BY", q._orderBy, "", "", ", ")
 	sqlClause(buffer, "LIMIT", q._limit, "", "", "")
 }
 
