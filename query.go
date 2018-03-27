@@ -588,9 +588,11 @@ func scanRow(rows *sql.Rows, colNum int) ([]sql.RawBytes, error) {
 	}
 	err := rows.Scan(args...)
 	for i := 0; i < len(vals); i++ {
-		b := make(sql.RawBytes, len(vals[i]))
-		copy(b, vals[i])
-		vals[i] = b
+		if vals[i] != nil {
+			b := make(sql.RawBytes, len(vals[i]))
+			copy(b, vals[i])
+			vals[i] = b
+		}
 	}
 	return vals, err
 }
