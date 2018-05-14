@@ -648,7 +648,7 @@ func getColumnFields(columns []string, stype reflect.Type) []*reflect.StructFiel
 		// column = strings.Replace(column, "_", "", -1)
 		for j := 0; j < stype.NumField(); j++ {
 			f := stype.Field(j)
-			if f.Tag.Get("column") == column {
+			if f.Tag.Get(tagName) == column {
 				field = &f
 				break
 			} else {
@@ -676,7 +676,19 @@ func reflectGetValue(root interface{}, property string) (interface{}, error) {
 		value = rootValue.MapIndex(key)
 		break
 	case reflect.Struct:
-		value = rootValue.FieldByName(property)
+		rootTyp := rootValue.Type()
+		for i := 0; i < rootTyp.NumField(); i++ {
+			typ := rootTyp.Field(i)
+			str, ok := typ.Tag.Lookup(tagName)
+			if ok && str == property {
+				value = rootValue.Field(i)
+				break
+			}
+			if !ok && typ.Name == property {
+				value = rootValue.Field(i)
+				break
+			}
+		}
 		break
 	default:
 		err = fmt.Errorf("%v is not int (map, *map, struct, *struct)", root)
