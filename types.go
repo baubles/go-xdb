@@ -129,4 +129,4 @@ type Querier interface {
 	Prepare(query string) (*sql.Stmt, error)
 }
 
-const tagName = "column"
+const tagName = "col"
