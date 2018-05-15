@@ -1,4 +1,4 @@
-package dbHelper
+package dbhelper
 
 import (
 	"bytes"
@@ -342,7 +342,7 @@ func (q *query) ReflectArgs(reflectArgs interface{}) Query {
 		default:
 			args = make([]interface{}, 0, len(q.tokens))
 			for _, token := range q.tokens {
-				if val, ok := reflectGetValue(reflectArgs, token); ok == nil {
+				if val, ok := reflectGetValue(reflectArgs, token); ok {
 					args = append(args, val)
 				} else {
 					args = append(args, nil)
@@ -507,15 +507,15 @@ func (q *query) ReflectRow(row interface{}) error {
 		return err
 	}
 
-	fields := getColumnFields(columns, typ)
+	indexs := getAllColumnFieldIndex(columns, typ)
 	if sqlRows.Next() {
 		cols, err := scanRow(sqlRows, len(columns))
 		if err != nil {
 			return err
 		}
-		for i, field := range fields {
-			if field != nil {
-				setFieldValue(ind.Field((*field).Index[0]), cols[i])
+		for i, index := range indexs {
+			if index != nil {
+				setFieldValue(ind.FieldByIndex(index), cols[i])
 			}
 		}
 		return nil
@@ -551,7 +551,7 @@ func (q *query) ReflectRows(rows interface{}) (int64, error) {
 		return num, err
 	}
 
-	fields := getColumnFields(columns, elType)
+	indexs := getAllColumnFieldIndex(columns, elType)
 	for sqlRows.Next() {
 		cols, err := scanRow(sqlRows, len(columns))
 		if err != nil {
@@ -566,9 +566,9 @@ func (q *query) ReflectRows(rows interface{}) (int64, error) {
 			elVal.Set(reflect.New(elVal.Type().Elem()))
 		}
 		elVal = reflect.Indirect(elVal)
-		for i, field := range fields {
-			if field != nil {
-				setFieldValue(elVal.Field((*field).Index[0]), cols[i])
+		for i, index := range indexs {
+			if index != nil && len(index) > 0 {
+				setFieldValue(elVal.FieldByIndex(index), cols[i])
 			}
 		}
 		num = num + 1
@@ -641,34 +641,61 @@ func setFieldValue(val reflect.Value, bytes sql.RawBytes) {
 	}
 }
 
-func getColumnFields(columns []string, stype reflect.Type) []*reflect.StructField {
-	fields := make([]*reflect.StructField, len(columns))
+func getAllColumnFieldIndex(columns []string, typ reflect.Type) [][]int {
+	indexs := make([][]int, len(columns))
 	for i, column := range columns {
-		var field *reflect.StructField
-		// column = strings.Replace(column, "_", "", -1)
-		for j := 0; j < stype.NumField(); j++ {
-			f := stype.Field(j)
-			if f.Tag.Get(tagName) == column {
-				field = &f
-				break
-			} else {
-				if strings.ToLower(strings.Replace(column, "_", "", -1)) == strings.ToLower(f.Name) {
-					field = &f
-				}
-			}
-		}
-		fields[i] = field
+		indexs[i] = getColumnFieldIndex(column, typ)
 	}
-	return fields
+	return indexs
 }
 
-func reflectGetValue(root interface{}, property string) (interface{}, error) {
+var timeType = reflect.TypeOf(time.Time{})
+
+func getColumnFieldIndex(column string, typ reflect.Type) []int {
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct || typ.ConvertibleTo(timeType) {
+		return nil
+	}
+	for i := 0; i < typ.NumField(); i++ {
+		f := typ.Field(i)
+		if f.Anonymous {
+			index := getColumnFieldIndex(column, f.Type)
+			if index != nil && len(index) > 0 {
+				return append([]int{i}, index...)
+			}
+		}
+		if f.Tag.Get(tagName) == column {
+			return []int{i}
+		}
+		if column == f.Name {
+			return []int{i}
+		}
+
+	}
+	return nil
+}
+
+func ensureValueFieldIndex(val reflect.Value, index []int) {
+	for _, i := range index {
+		val = val.Field(i)
+		if val.Kind() == reflect.Ptr {
+			if val.IsNil() {
+				val.Set(reflect.New(val.Type().Elem()))
+			}
+			val = val.Elem()
+		}
+	}
+}
+
+func reflectGetValue(root interface{}, property string) (interface{}, bool) {
+	ok := true
 	rootValue := reflect.ValueOf(root)
 	if rootValue.Kind() == reflect.Ptr {
 		rootValue = rootValue.Elem()
 	}
 	var result interface{}
-	var err error
 	var value reflect.Value
 	switch rootValue.Kind() {
 	case reflect.Map:
@@ -679,6 +706,11 @@ func reflectGetValue(root interface{}, property string) (interface{}, error) {
 		rootTyp := rootValue.Type()
 		for i := 0; i < rootTyp.NumField(); i++ {
 			typ := rootTyp.Field(i)
+			if typ.Anonymous {
+				if inf, ok := reflectGetValue(rootValue.Field(i).Interface(), property); ok {
+					return inf, ok
+				}
+			}
 			str, ok := typ.Tag.Lookup(tagName)
 			if ok && str == property {
 				value = rootValue.Field(i)
@@ -691,18 +723,16 @@ func reflectGetValue(root interface{}, property string) (interface{}, error) {
 		}
 		break
 	default:
-		err = fmt.Errorf("%v is not int (map, *map, struct, *struct)", root)
+		panic(fmt.Sprintf("%v is not (map, *map, struct, *struct)", root))
 	}
 
-	if err == nil {
-		if value.IsValid() {
-			switch value.Kind() {
-			default:
-				result = value.Interface()
-			}
-		} else {
-			err = errors.New(property + " invalid")
-		}
+	if value.IsValid() {
+		result = value.Interface()
+		ok = true
+	} else {
+		result = nil
+		ok = false
 	}
-	return result, err
+
+	return result, ok
 }
