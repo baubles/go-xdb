@@ -320,11 +320,14 @@ func (q *query) Prepare() error {
 }
 
 func (q *query) Close() error {
-	err := q.stmt.Close()
-	if err == nil {
-		q.stmt = nil
+	if q.stmt != nil {
+		err := q.stmt.Close()
+		if err == nil {
+			q.stmt = nil
+		}
+		return err
 	}
-	return err
+	return nil
 }
 
 func (q *query) Args(args ...interface{}) Query {
@@ -493,7 +496,7 @@ func (q *query) ReflectRow(row interface{}) error {
 	ind := reflect.Indirect(val)
 	typ := ind.Type()
 	if val.Kind() != reflect.Ptr || ind.Kind() != reflect.Struct || typ.String() == "time.Time" {
-		return errors.New("dbHelper rows must be ptr struct")
+		return errors.New("xdb rows must be ptr struct")
 	}
 
 	sqlRows, err := q.rows()
@@ -528,7 +531,7 @@ func (q *query) ReflectRows(rows interface{}) (int64, error) {
 	val := reflect.ValueOf(rows)
 	ind := reflect.Indirect(val)
 	if val.Kind() != reflect.Ptr || ind.Kind() != reflect.Slice {
-		return num, errors.New("dbHelper rows must be ptr slice")
+		return num, errors.New("xdb rows must be ptr slice")
 	}
 
 	elType := ind.Type().Elem()
@@ -537,7 +540,7 @@ func (q *query) ReflectRows(rows interface{}) (int64, error) {
 	}
 
 	if elType.Kind() != reflect.Struct || elType.String() == "time.Time" {
-		return num, errors.New("dbHelper rows must be ptr struct")
+		return num, errors.New("xdb rows must be ptr struct")
 	}
 
 	sqlRows, err := q.rows()

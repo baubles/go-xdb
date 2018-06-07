@@ -96,25 +96,20 @@ type Query interface {
 // LogFunc func print sql log
 var LogFunc func(sql string, args ...interface{})
 
-// DB interface
-type DB interface {
-	NewQuery() Query
-}
-
 // Helper qeury helper
 type Helper interface {
 	NewQuery() Query
 	Querier() Querier
 }
 
-// DBHelper db hlper
-type DBHelper interface {
+// DB db
+type DB interface {
 	Helper
-	Begin() (TXHelper, error)
+	Begin() (TX, error)
 }
 
-// TXHelper tx helper
-type TXHelper interface {
+// TX tx
+type TX interface {
 	Helper
 	Rollback() error
 	Commit() error
@@ -129,4 +124,4 @@ type Querier interface {
 	Prepare(query string) (*sql.Stmt, error)
 }
 
-const tagName = "col"
+const tagName = "db"

@@ -8,54 +8,54 @@ func log(sql string, args ...interface{}) {
 	}
 }
 
-type dbHelper struct {
+type xdb struct {
 	db *sql.DB
 }
 
-type txHelper struct {
+type xtx struct {
 	tx *sql.Tx
 }
 
-// New new helper of database
-func New(db *sql.DB) DBHelper {
-	return &dbHelper{
+// New db
+func New(db *sql.DB) DB {
+	return &xdb{
 		db: db,
 	}
 }
 
-func (h dbHelper) Begin() (TXHelper, error) {
-	tx, err := h.db.Begin()
+func (x xdb) Begin() (TX, error) {
+	tx, err := x.db.Begin()
 	if err != nil {
-		return NewTXHelper(tx), nil
+		return NewTX(tx), nil
 	}
 	return nil, err
 }
 
-func (h dbHelper) NewQuery() Query {
-	return &query{querier: h.Querier()}
+func (x xdb) NewQuery() Query {
+	return &query{querier: x.Querier()}
 }
 
-func (h dbHelper) Querier() Querier {
-	return h.db
+func (x xdb) Querier() Querier {
+	return x.db
 }
 
-// NewTXHelper new helper of transaction
-func NewTXHelper(tx *sql.Tx) TXHelper {
-	return &txHelper{tx: tx}
+// NewTX new transaction
+func NewTX(tx *sql.Tx) TX {
+	return &xtx{tx: tx}
 }
 
-func (h txHelper) NewQuery() Query {
-	return &query{querier: h.Querier()}
+func (x xtx) NewQuery() Query {
+	return &query{querier: x.Querier()}
 }
 
-func (h txHelper) Rollback() error {
-	return h.tx.Rollback()
+func (x xtx) Rollback() error {
+	return x.tx.Rollback()
 }
 
-func (h txHelper) Commit() error {
-	return h.tx.Commit()
+func (x xtx) Commit() error {
+	return x.tx.Commit()
 }
 
-func (h txHelper) Querier() Querier {
-	return h.tx
+func (x xtx) Querier() Querier {
+	return x.tx
 }
