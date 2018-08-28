@@ -26,9 +26,9 @@ func New(db *sql.DB) DB {
 func (x xdb) Begin() (TX, error) {
 	tx, err := x.db.Begin()
 	if err != nil {
-		return NewTX(tx), nil
+		return nil, err
 	}
-	return nil, err
+	return NewTX(tx), nil
 }
 
 func (x xdb) NewQuery() Query {
