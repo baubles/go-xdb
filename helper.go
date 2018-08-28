@@ -1,4 +1,4 @@
-package dbhelper
+package xdb
 
 import "database/sql"
 
