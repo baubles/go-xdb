@@ -3,6 +3,12 @@
 ## New
 
 ```golang
+import (
+    "database/sql"
+    "github.com/baubles/go-xdb"
+    _ "github.com/go-sql-driver/mysql" // mysql driver
+)
+
 dbConn, err := sql.Open("mysql", dsn)
 db = xdb.New(dbConn)
 ```
