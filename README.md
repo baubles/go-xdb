@@ -31,19 +31,19 @@ row := &Entity{}
 rows := []*Entity{}
 
 // reflect to struct
-err := b.NewQuery().SQL("select Id, Name from table where Id = ${Id}").ReflectArgs(row).ReflectRow(row)
+err := db.NewQuery().SQL("select Id, Name from table where Id = ${Id}").ReflectArgs(row).ReflectRow(row)
 fmt.Println(err, row)
 
 // reflect to struct list
-n, err := b.NewQuery().SQL("select Id, Name from table where Id = ${Id}").ReflectArgs(row).ReflectRows(&rows)
+n, err := db.NewQuery().SQL("select Id, Name from table where Id = ${Id}").ReflectArgs(row).ReflectRows(&rows)
 fmt.Println(n, err, rows)
 
 //return map[string]Value
-mRow, err := b.NewQuery().SQL("select Id, Name from table where Id = ${Id}").ReflectArgs(row).Row()
+mRow, err := db.NewQuery().SQL("select Id, Name from table where Id = ${Id}").ReflectArgs(row).Row()
 fmt.Println(err, mRow)
 
 // return []map[string]Value
-mRows, err := b.NewQuery().SQL("select Id, Name from table").Rows()
+mRows, err := db.NewQuery().SQL("select Id, Name from table").Rows()
 fmt.Println(err, mRows)
 ```
 
