@@ -449,6 +449,9 @@ func (q *query) Row() (Row, error) {
 func (q *query) Rows() ([]Row, error) {
 	sqlRows, err := q.rows()
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return []Row{}, nil
+		}
 		return nil, err
 	}
 	defer sqlRows.Close()
@@ -545,6 +548,9 @@ func (q *query) ReflectRows(rows interface{}) (int64, error) {
 
 	sqlRows, err := q.rows()
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
 		return num, err
 	}
 	defer sqlRows.Close()
